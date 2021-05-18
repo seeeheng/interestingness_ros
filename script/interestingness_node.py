@@ -30,14 +30,14 @@
 
 import os
 import cv2
-import PIL
+from PIL import Image
 import sys
 import torch
 import rospy
 import rospkg
 import argparse
 import numpy as np
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image as SensorImage
 from rospy.numpy_msg import numpy_msg
 from cv_bridge import CvBridge, CvBridgeError
 import torchvision.transforms as transforms
@@ -69,9 +69,9 @@ class InterestNode:
         net.memory.set_learning_rate(rr=self.rr, wr=self.wr)
         self.net = net.cuda() if torch.cuda.is_available() else net
         for topic in self.image_topic:
-            rospy.Subscriber(topic, Image, self.callback)
+            rospy.Subscriber(topic, SensorImage, self.callback)
         rospy.Subscriber(args.interaction_topic, numpy_msg(UnInterests), self.interaction_callback)
-        self.frame_pub = rospy.Publisher('interestingness/image', Image, queue_size=10)
+        self.frame_pub = rospy.Publisher('interestingness/image', SensorImage, queue_size=10)
         self.info_pub = rospy.Publisher('interestingness/info', numpy_msg(InterestInfo), queue_size=10)
 
     def config(self, args):
@@ -90,7 +90,7 @@ class InterestNode:
         rospy.loginfo("Received image %s: %d"%(msg.header.frame_id, msg.header.seq))
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, "rgb8")
-            frame = PIL.Image.fromarray(frame)
+            frame = Image.fromarray(frame)
             image = self.transform(frame)
             frame = self.normalize(image).unsqueeze(dim=0)
         except CvBridgeError:
